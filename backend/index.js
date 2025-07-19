@@ -1,6 +1,5 @@
 const express = require("express");
 const pool = require("./db-config");
-const { createPagination } = require("./pagination");
 
 require("dotenv").config();
 
