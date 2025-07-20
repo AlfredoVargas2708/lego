@@ -1,51 +1,11 @@
 const express = require("express");
 const pool = require("./db-config");
+const { scrapping } = require("./webScrapping");
 
 require("dotenv").config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-
-app.get("/lego", async (req, res) => {
-  try {
-    const { page, pageSize } = req.query;
-
-    if (!page || !pageSize) {
-      return res.status(400).send({
-        message: "Faltan elementos a la consulta",
-        data: [],
-      });
-    }
-
-    const offset = (page - 1) * pageSize;
-
-    const dataQuery = "SELECT * FROM lego LIMIT $1 OFFSET $2";
-    const countQuery = "SELECT COUNT(*) FROM lego";
-
-    const [dataResult, countResult] = await Promise.all([
-      pool.query(dataQuery, [pageSize, offset]),
-      pool.query(countQuery),
-    ]);
-
-    const totalLegos = parseInt(countResult.rows[0].count);
-
-    res.status(200).send({
-      message: dataResult.rows.length
-        ? "Legos encontrados"
-        : "Legos no encontrados",
-      data: dataResult.rows,
-      pagination: {
-        page: parseInt(page),
-        pageSize: parseInt(pageSize),
-        totalLegos,
-        totalPages: Math.ceil(totalLegos / pageSize),
-      },
-    });
-  } catch (error) {
-    console.error("Error in get route:", error);
-    res.status(500).send({ message: "Internal Server Error" });
-  }
-});
 
 app.get("/search/:column/:value", async (req, res) => {
   try {
@@ -63,14 +23,19 @@ app.get("/search/:column/:value", async (req, res) => {
     const query = `SELECT * FROM lego WHERE ${column} = $1 LIMIT $2 OFFSET $3`;
     const result = await pool.query(query, [value, pageSize, offset]);
 
+    const count = await pool.query(`SELECT COUNT(*) FROM lego WHERE ${column} = $1`, [value]);
+
+    const imgData = await scrapping(result.rows);
+
     res.status(200).send({
       message: "Legos encontrados",
       data: result.rows,
+      imgData,
       pagination: {
         page,
         pageSize,
-        totalLegos: result.rows.length,
-        totalPages: Math.ceil(result.rows.length / pageSize),
+        totalLegos: count.rows[0].count,
+        totalPages: Math.ceil(count.rows[0].count / pageSize),
       },
     });
   } catch (error) {
