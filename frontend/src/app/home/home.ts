@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, ElementRef, ViewChild } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { LegoService } from '../lego.service';
 
 @Component({
@@ -8,7 +8,7 @@ import { LegoService } from '../lego.service';
   templateUrl: './home.html',
   styleUrl: './home.scss'
 })
-export class Home {
+export class Home implements OnInit {
   page: number = 1;
   pageSize: number = 10;
   totalPages: number = 1;
@@ -21,7 +21,9 @@ export class Home {
 
   @ViewChild('searchInput') searchInput!: ElementRef;
 
-  constructor(private legoService: LegoService, private cdr: ChangeDetectorRef) {
+  constructor(private legoService: LegoService, private cdr: ChangeDetectorRef) { }
+
+  ngOnInit(): void {
     this.legoService.getColumns().subscribe((result) => {
       this.searchOptions = result.nombres_columnas
       this.cdr.markForCheck();
