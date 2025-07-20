@@ -33,6 +33,35 @@ app.get("/nombres-columnas/:tabla", async (req, res) => {
   }
 });
 
+app.get("/options/:column/:value", async (req, res) => {
+  try {
+    const { column, value } = req.params;
+
+    if (!column || !value) {
+      return res
+        .status(400)
+        .send({ message: "Faltan valores a la consulta", data: [] });
+    }
+
+    const query = `SELECT DISTINCT ${column} FROM lego WHERE ${column} ILIKE $1 ORDER BY ${column}`;
+    const result = await pool.query(query, [`%${value}%`]);
+
+    if (result.rows.length === 0) {
+      return res.status(400).send({ message: "No hay opciones", data: [] });
+    }
+
+    res
+      .status(200)
+      .send({
+        message: "Opciones encontradas",
+        data: result.rows.map((col) => col[column]),
+      });
+  } catch (error) {
+    console.error("Error in options route:", error);
+    res.status(500).send({ message: "Internal Server Error" });
+  }
+});
+
 app.get("/search/:column/:value", async (req, res) => {
   try {
     const { column, value } = req.params;
