@@ -12,6 +12,7 @@ export class Home {
   page: number = 1;
   pageSize: number = 10;
   totalPages: number = 1;
+  isLoading: boolean = false;
   legoData: any = [];
   imagesData: any = [];
   searchOptions: any = [];
@@ -49,17 +50,18 @@ export class Home {
   }
 
   getLegoPieces(selected: any) {
+    this.resultOptions = [];
+    this.searchInput.nativeElement.value = selected;
+    this.isLoading = true;
     this.legoService.getResults(this.selectedOption.toLowerCase(), selected, this.page, this.pageSize).subscribe({
       next: (response) => {
         this.legoData = response.data;
         this.imagesData = response.imgData;
         this.pageSize = response.pagination.pageSize;
         this.totalPages = response.pagination.totalPages;
-        this.resultOptions = [];
-        this.selectedOption = '';
-        this.searchInput.nativeElement.value = '';
+        this.isLoading = false;
         this.cdr.markForCheck();
-        console.log(this.legoData, this.imagesData);
+        console.log(this.imagesData)
       },
       error: (error) => {
         console.error('Error al obtener las piezas de Lego:', error.error.message);
