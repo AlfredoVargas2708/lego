@@ -7,6 +7,31 @@ require("dotenv").config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+app.get("/nombres-columnas/:tabla", async (req, res) => {
+  try {
+    const { tabla } = req.params;
+    const query = `
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = $1
+      ORDER BY ordinal_position;
+    `;
+
+    const result = await pool.query(query, [tabla]);
+    const nombresColumnas = result.rows.map((row) => row.column_name);
+
+    res.json({
+      tabla: tabla,
+      nombres_columnas: nombresColumnas,
+    });
+  } catch (error) {
+    console.error("Error:", error);
+    res
+      .status(500)
+      .json({ error: "Error al obtener los nombres de las columnas" });
+  }
+});
+
 app.get("/search/:column/:value", async (req, res) => {
   try {
     const { column, value } = req.params;
@@ -23,7 +48,10 @@ app.get("/search/:column/:value", async (req, res) => {
     const query = `SELECT * FROM lego WHERE ${column} = $1 LIMIT $2 OFFSET $3`;
     const result = await pool.query(query, [value, pageSize, offset]);
 
-    const count = await pool.query(`SELECT COUNT(*) FROM lego WHERE ${column} = $1`, [value]);
+    const count = await pool.query(
+      `SELECT COUNT(*) FROM lego WHERE ${column} = $1`,
+      [value]
+    );
 
     const imgData = await scrapping(result.rows);
 
