@@ -16,7 +16,7 @@ const scrapping = async (legoData) => {
       Object.keys(conteoCode).length === 1 &&
       Object.keys(conteoLego).length > 1
     ) {
-      const codeImages = codeUrl.replace("code", Object.keys(conteoCode));
+      const codeImage = codeUrl.replace("code", Object.keys(conteoCode));
 
       const legoUrls = [];
       const legoImages = [];
@@ -36,7 +36,7 @@ const scrapping = async (legoData) => {
         legoImages.push(images);
       }
 
-      return { codeImages, legoImages };
+      return { codeImage, legoImages };
     } else if (
       Object.keys(conteoLego).length === 1 &&
       Object.keys(conteoCode).length > 1
@@ -63,7 +63,7 @@ const scrapping = async (legoData) => {
       (Object.keys(conteoCode).length === 1 &&
         Object.keys(conteoLego).length) === 1
     ) {
-      codeUrl = codeUrl.replace("code", Object.keys(conteoCode));
+      codeImage = codeUrl.replace("code", Object.keys(conteoCode));
       legoUrl = legoUrl + Object.keys(conteoLego)[0];
 
       const { data } = await axios.get(legoUrl);
@@ -75,7 +75,7 @@ const scrapping = async (legoData) => {
 
       const legoImage = images;
 
-      return { codeUrl, legoImage };
+      return { codeImage, legoImage };
     }
   } catch (error) {
     console.error("Error in scrapping:", error);
