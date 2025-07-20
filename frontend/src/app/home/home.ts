@@ -24,6 +24,7 @@ export class Home {
   constructor(private legoService: LegoService, private cdr: ChangeDetectorRef) {
     this.legoService.getColumns().subscribe((result) => {
       this.searchOptions = result.nombres_columnas
+      this.cdr.markForCheck();
     })
   }
 
