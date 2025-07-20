@@ -4,10 +4,10 @@ let legoUrl = "https://www.lego.com/es-es/service/building-instructions/";
 let codeUrl =
   "https://www.lego.com/cdn/product-assets/element.img.photoreal.192x192/code.jpg";
 
-const scrapping = async(legoData) => {
+const scrapping = async (legoData) => {
   try {
     const legoSet = legoData.map((lego) => lego.lego);
-    const codeSet = legoData.map((lego) => lego.code);
+    const codeSet = legoData.map((lego) => lego.pieza);
 
     const conteoCode = contarRepeticiones(codeSet);
     const conteoLego = contarRepeticiones(legoSet);
@@ -16,47 +16,71 @@ const scrapping = async(legoData) => {
       Object.keys(conteoCode).length === 1 &&
       Object.keys(conteoLego).length > 1
     ) {
-      codeUrl = codeUrl.replace("code", Object.keys(conteoCode));
+      const codeImages = codeUrl.replace("code", Object.keys(conteoCode));
 
       const legoUrls = [];
+      const legoImages = [];
 
       for (let i = 0; i < Object.keys(conteoLego).length; i++) {
-        legoUrls.push({
-          image: "",
-          url: legoUrl + Object.keys(conteoLego)[i],
-        });
+        legoUrls.push(legoUrl + Object.keys(conteoLego)[i]);
       }
 
       for (let i = 0; i < legoUrls.length; i++) {
-        const { data } = await axios.get(legoUrls[i].url);
+        const { data } = await axios.get(legoUrls[i]);
         const $ = cheerio.load(data);
 
         const images = $('source[type="image/webp"]')[0]
           .attribs["srcset"].split(",")[0]
           .split(" ")[0];
 
-        legoUrls[i].image = images;
+        legoImages.push(images);
       }
 
-      return { codeUrl, legoUrls };
+      return { codeImages, legoImages };
     } else if (
       Object.keys(conteoLego).length === 1 &&
       Object.keys(conteoCode).length > 1
     ) {
       legoUrl = legoUrl + Object.keys(conteoLego)[0];
 
-      let codeUrls = [];
+      const { data } = await axios.get(legoUrl);
+      const $ = cheerio.load(data);
+
+      const images = $('source[type="image/webp"]')[0]
+        .attribs["srcset"].split(",")[0]
+        .split(" ")[0];
+
+      const legoImage = images;
+
+      let codeImages = [];
 
       for (let i = 0; i < Object.keys(conteoCode).length; i++) {
-        codeUrls.push(codeUrl.replace("code", Object.keys(conteoCode)[i]));
-      };
+        codeImages.push(codeUrl.replace("code", Object.keys(conteoCode)[i]));
+      }
 
-      return { legoUrl, codeUrls };
+      return { legoImage, codeImages };
+    } else if (
+      (Object.keys(conteoCode).length === 1 &&
+        Object.keys(conteoLego).length) === 1
+    ) {
+      codeUrl = codeUrl.replace("code", Object.keys(conteoCode));
+      legoUrl = legoUrl + Object.keys(conteoLego)[0];
+
+      const { data } = await axios.get(legoUrl);
+      const $ = cheerio.load(data);
+
+      const images = $('source[type="image/webp"]')[0]
+        .attribs["srcset"].split(",")[0]
+        .split(" ")[0];
+
+      const legoImage = images;
+
+      return { codeUrl, legoImage };
     }
   } catch (error) {
     console.error("Error in scrapping:", error);
   }
-}
+};
 
 const contarRepeticiones = (array) => {
   return array.reduce((contador, item) => {
