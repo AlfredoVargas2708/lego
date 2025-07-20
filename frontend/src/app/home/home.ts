@@ -12,6 +12,11 @@ export class Home {
   page: number = 1;
   pageSize: number = 10;
   legoData: any = [];
+  searchOptions: any = []
   
-  constructor(private legoService: LegoService) {}
+  constructor(private legoService: LegoService) {
+    this.legoService.getColumns().subscribe((result) => {
+      this.searchOptions = result.nombres_columnas
+    })
+  }
 }
