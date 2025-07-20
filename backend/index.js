@@ -1,4 +1,5 @@
 const express = require("express");
+const cors = require('cors');
 const pool = require("./db-config");
 const { scrapping } = require("./webScrapping");
 const capitalize = require('./capitalize');
@@ -7,6 +8,9 @@ require("dotenv").config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+app.use(cors());
+app.use(express.json());
 
 app.get("/nombres-columnas/:tabla", async (req, res) => {
   try {

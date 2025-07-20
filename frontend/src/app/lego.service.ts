@@ -13,6 +13,10 @@ export class LegoService {
     return this.http.get(`${environment.apiUrl}/nombres-columnas/lego`);
   }
 
+  getOptions(column: string, value: string): Observable<any> {
+    return this.http.get(`${environment.apiUrl}/options/${column}/${value}`);
+  }
+
   getResults(column: string, value: string, page: number, pageSize: number): Observable<any> {
     return this.http.get(`${environment.apiUrl}/search/${column}/${value}?page=${page}&?pageSize=${pageSize}`);
   }

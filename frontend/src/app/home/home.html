@@ -11,7 +11,7 @@
   </div>
   <div class="row justify-content-center gap-3">
     <div class="col-lg-3 col-md-4 mb-2 mt-4">
-      <select class="form-select">
+      <select class="form-select" (change)="getSelectedOption($event)">
         <option value="" selected>Buscar por...</option>
         <option *ngFor="let option of searchOptions" class="search-option">
           {{ option }}
@@ -20,7 +20,7 @@
     </div>
     <div class="col-lg-4 col-md-3 mb-2 mt-4">
       <div class="search-by-container">
-        <input type="text" class="form-control" />
+        <input #searchInput type="text" class="form-control" (input)="getResultOptions($event)"/>
         <img
           _ngcontent-ng-c261296637=""
           src="https://img.icons8.com/ios/50/cancel.png"
