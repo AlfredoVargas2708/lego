@@ -18,6 +18,6 @@ export class LegoService {
   }
 
   getResults(column: string, value: string, page: number, pageSize: number): Observable<any> {
-    return this.http.get(`${environment.apiUrl}/search/${column}/${value}?page=${page}&?pageSize=${pageSize}`);
+    return this.http.get(`${environment.apiUrl}/search/${column}/${value}?page=${page}&pageSize=${pageSize}`);
   }
 }

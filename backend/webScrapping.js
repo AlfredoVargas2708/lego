@@ -7,7 +7,7 @@ let codeUrl =
 const scrapping = async(legoData) => {
   try {
     const legoSet = legoData.map((lego) => lego.lego);
-    const codeSet = legoData.map((lego) => lego.code);
+    const codeSet = legoData.map((lego) => lego.pieza);
 
     const conteoCode = contarRepeticiones(codeSet);
     const conteoLego = contarRepeticiones(legoSet);
