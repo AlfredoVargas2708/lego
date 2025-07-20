@@ -9,9 +9,7 @@ require("dotenv").config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors({
-  origin: 'https://lego-smoky.vercel.app'
-}));
+app.use(cors());
 app.use(express.json());
 
 app.get("/nombres-columnas/:tabla", async (req, res) => {
