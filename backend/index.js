@@ -1,6 +1,7 @@
 const express = require("express");
 const pool = require("./db-config");
 const { scrapping } = require("./webScrapping");
+const capitalize = require('./capitalize');
 
 require("dotenv").config();
 
@@ -18,11 +19,11 @@ app.get("/nombres-columnas/:tabla", async (req, res) => {
     `;
 
     const result = await pool.query(query, [tabla]);
-    const nombresColumnas = result.rows.map((row) => row.column_name);
+    const nombresColumnas = result.rows.filter((row) => row.column_name !== 'id');
 
     res.json({
       tabla: tabla,
-      nombres_columnas: nombresColumnas,
+      nombres_columnas: nombresColumnas.map(row => capitalize(row.column_name)),
     });
   } catch (error) {
     console.error("Error:", error);

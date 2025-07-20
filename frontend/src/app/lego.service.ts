@@ -9,6 +9,10 @@ import { environment } from './environments/environment';
 export class LegoService {
   constructor(private http: HttpClient) {}
 
+  getColumns(): Observable<any> {
+    return this.http.get(`${environment.apiUrl}/nombres-columnas/lego`);
+  }
+
   getResults(column: string, value: string, page: number, pageSize: number): Observable<any> {
     return this.http.get(`${environment.apiUrl}/search/${column}/${value}?page=${page}&?pageSize=${pageSize}`);
   }

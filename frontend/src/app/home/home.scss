@@ -1,0 +1,17 @@
+.search-option {
+    text-transform: capitalize;
+}
+
+.search-by-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.cancel-icon {
+    width: 20px;
+    height: 20px;
+    position: absolute;
+    right: .75rem;
+    cursor: pointer;
+}
