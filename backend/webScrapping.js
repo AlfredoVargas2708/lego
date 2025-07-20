@@ -1,6 +1,6 @@
 const axios = require("axios");
 const cheerio = require("cheerio");
-let legoUrl = "https://www.lego.com/es-es/service/building-instructions/";
+let legoUrl = "https://www.lego.com/service/building-instructions/";
 let codeUrl =
   "https://www.lego.com/cdn/product-assets/element.img.photoreal.192x192/code.jpg";
 
