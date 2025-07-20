@@ -1,102 +1,118 @@
 const axios = require("axios");
 const cheerio = require("cheerio");
-let legoUrl = "https://www.lego.com/service/building-instructions/";
-let codeUrl =
-  "https://www.lego.com/cdn/product-assets/element.img.photoreal.192x192/code.jpg";
-let notFoundImage = "https://www.lego.com/cdn/cs/set/assets/blt25ecf37f37849299/one_missing_brick.webp?format=webply&fit=bounds&quality=75&width=500&height=500&dpr=1"
-let notFoundLego = "https://www.lego.com/service/building-instructions/1"
 
-const scrapping = async (legoData) => {
-  try {
-    const legoSet = legoData.map((lego) => lego.lego);
-    const codeSet = legoData.map((lego) => lego.pieza);
-
-    const conteoCode = contarRepeticiones(codeSet);
-    const conteoLego = contarRepeticiones(legoSet);
-
-    if (
-      Object.keys(conteoCode).length === 1 &&
-      Object.keys(conteoLego).length > 1
-    ) {
-      const codeImage = codeUrl.replace("code", Object.keys(conteoCode));
-
-      const legoUrls = [];
-      const legoImages = [];
-
-      for (let i = 0; i < Object.keys(conteoLego).length; i++) {
-        if (Object.keys(conteoLego)[i] !== "") {
-          legoUrls.push(legoUrl + Object.keys(conteoLego)[i]);
-        } else {
-          legoUrls.push(notFoundLego);
-        }
-      }
-
-      for (let i = 0; i < legoUrls.length; i++) {
-        const { data } = await axios.get(legoUrls[i]);
-        const $ = cheerio.load(data);
-
-        const images = $('source[type="image/webp"]')[0]
-          .attribs["srcset"].split(",")[0]
-          .split(" ")[0];
-
-        legoImages.push(images);
-      }
-
-      return { codeImage, legoImages };
-    } else if (
-      Object.keys(conteoLego).length === 1 &&
-      Object.keys(conteoCode).length > 1
-    ) {
-      legoUrl = legoUrl + Object.keys(conteoLego)[0];
-
-      const { data } = await axios.get(legoUrl);
-      const $ = cheerio.load(data);
-
-      const images = $('source[type="image/webp"]')[0]
-        .attribs["srcset"].split(",")[0]
-        .split(" ")[0];
-
-      const legoImage = images;
-
-      let codeImages = [];
-
-      for (let i = 0; i < Object.keys(conteoCode).length; i++) {
-        if (Object.keys(conteoCode)[i] !== "") {
-          codeImages.push(codeUrl.replace("code", Object.keys(conteoCode)[i]));
-        } else {
-          codeImages.push(notFoundImage);
-        }
-      }
-
-      return { legoImage, codeImages };
-    } else if (
-      (Object.keys(conteoCode).length === 1 &&
-        Object.keys(conteoLego).length) === 1
-    ) {
-      codeImage = Object.keys(conteoCode)[0] !== '' ? codeUrl.replace("code", Object.keys(conteoCode)) : notFoundImage;
-      legoUrl = Object.keys(conteoLego)[0] !== '' ? legoUrl = legoUrl + Object.keys(conteoLego)[0] : notFoundLego;
-
-      const { data } = await axios.get(legoUrl);
-      const $ = cheerio.load(data);
-
-      const images = $('source[type="image/webp"]')[0]
-        .attribs["srcset"].split(",")[0]
-        .split(" ")[0];
-
-      const legoImage = images;
-
-      return { codeImage, legoImage };
-    }
-  } catch (error) {
-    console.error("Error in scrapping:", error);
-  }
+// Configuración en un objeto para mejor organización
+const config = {
+  legoBaseUrl: "https://www.lego.com/service/building-instructions/",
+  codeImageBaseUrl:
+    "https://www.lego.com/cdn/product-assets/element.img.photoreal.192x192/",
+  notFoundImage:
+    "https://www.lego.com/cdn/cs/set/assets/blt25ecf37f37849299/one_missing_brick.webp?format=webply&fit=bounds&quality=75&width=500&height=500&dpr=1",
+  notFoundLego: "https://www.lego.com/service/building-instructions/1",
 };
 
-const contarRepeticiones = (array) => {
-  return array.reduce((contador, item) => {
-    contador[item] = (contador[item] || 0) + 1;
-    return contador;
+// Función helper para contar repeticiones
+const countOccurrences = (array) => {
+  return array.reduce((acc, item) => {
+    acc[item] = (acc[item] || 0) + 1;
+    return acc;
   }, {});
 };
 
-module.exports = { scrapping };
+// Función helper para obtener imagen LEGO
+const fetchLegoImage = async (legoId) => {
+  try {
+    const url = legoId ? `${config.legoBaseUrl}${legoId}` : config.notFoundLego;
+    const { data } = await axios.get(url);
+    const $ = cheerio.load(data);
+
+    const imageElement = $('source[type="image/webp"]').first();
+    if (!imageElement.length) return null;
+
+    return imageElement.attr("srcset").split(",")[0].split(" ")[0];
+  } catch (error) {
+    console.error(`Error fetching LEGO image for ${legoId}:`, error.message);
+    return null;
+  }
+};
+
+// Función principal refactorizada
+const scrapeLegoData = async (legoData) => {
+  try {
+    const legoSet = legoData.map((item) => item.lego);
+    const codeSet = legoData.map((item) => item.pieza);
+
+    const codeCount = countOccurrences(codeSet);
+    const legoCount = countOccurrences(legoSet);
+
+    const uniqueCodes = Object.keys(codeCount);
+    const uniqueLegos = Object.keys(legoCount);
+
+    const hasSingleCode = uniqueCodes.length === 1;
+    const hasSingleLego = uniqueLegos.length === 1;
+    const hasMultipleCodes = uniqueCodes.length > 1;
+    const hasMultipleLegos = uniqueLegos.length > 1;
+
+    // Procesamiento de imágenes de códigos
+    const processCodeImages = () => {
+      return uniqueCodes.map((code) => ({
+        img: code
+          ? `${config.codeImageBaseUrl}${code}.jpg`
+          : config.notFoundImage,
+        piece: code || "unknown",
+      }));
+    };
+
+    // Procesamiento de imágenes LEGO
+    const processLegoImages = async () => {
+      const results = [];
+      for (const legoId of uniqueLegos) {
+        const imageUrl = legoId
+          ? await fetchLegoImage(legoId)
+          : config.notFoundImage;
+        results.push({
+          img: imageUrl || config.notFoundImage,
+          lego: legoId || "unknown",
+        });
+      }
+      return results;
+    };
+
+    // Lógica principal más clara
+    if (hasSingleCode && hasSingleLego) {
+      const codeImage = uniqueCodes[0]
+        ? `${config.codeImageBaseUrl}${uniqueCodes[0]}.jpg`
+        : config.notFoundImage;
+
+      const legoImage = await fetchLegoImage(uniqueLegos[0]);
+
+      return {
+        codeImage: codeImage,
+        legoImage: legoImage || config.notFoundImage,
+      };
+    } else if (hasSingleCode && hasMultipleLegos) {
+      return {
+        codeImage: uniqueCodes[0]
+          ? `${config.codeImageBaseUrl}${uniqueCodes[0]}.jpg`
+          : config.notFoundImage,
+        legoImages: await processLegoImages(),
+      };
+    } else if (hasMultipleCodes && hasSingleLego) {
+      return {
+        legoImage:
+          (await fetchLegoImage(uniqueLegos[0])) || config.notFoundImage,
+        codeImages: processCodeImages(),
+      };
+    } else if (hasMultipleCodes && hasMultipleLegos) {
+      return {
+        codeImages: processCodeImages(),
+        legoImages: await processLegoImages(),
+      };
+    }
+  } catch (error) {
+    console.error("Error in scrapeLegoData:", error);
+    throw error; // Re-lanzar el error para manejo superior
+  }
+};
+
+module.exports = { scrapeLegoData };

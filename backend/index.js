@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require('cors');
 const pool = require("./db-config");
-const { scrapping } = require("./webScrapping");
+const { scrapeLegoData } = require("./webScrapping");
 const capitalize = require('./capitalize');
 
 require("dotenv").config();
@@ -79,7 +79,7 @@ app.get("/search/:column/:value", async (req, res) => {
 
     const offset = (page - 1) * pageSize;
 
-    const query = `SELECT * FROM lego WHERE ${column} = $1 LIMIT $2 OFFSET $3`;
+    const query = `SELECT * FROM lego WHERE ${column} = $1 ORDER BY ${column} LIMIT $2 OFFSET $3`;
     const result = await pool.query(query, [value, pageSize, offset]);
 
     const count = await pool.query(
@@ -87,7 +87,7 @@ app.get("/search/:column/:value", async (req, res) => {
       [value]
     );
 
-    const imgData = await scrapping(result.rows);
+    const imgData = await scrapeLegoData(result.rows);
 
     res.status(200).send({
       message: "Legos encontrados",

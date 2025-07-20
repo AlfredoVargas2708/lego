@@ -61,26 +61,12 @@
         <tr *ngFor="let piece of legoData; let i = index">
           <td>
             <div class="image-cell">
-              <img
-                [src]="
-                  imagesData.codeImage
-                    ? imagesData.codeImage
-                    : imagesData.codeImages[i]
-                "
-                alt=""
-              />
+              <img [src]="piece.imgPiece" alt="" />
             </div>
           </td>
           <td>
             <div class="image-cell">
-              <img
-                [src]="
-                  imagesData.legoImage
-                    ? imagesData.legoImage
-                    : imagesData.legoImages[i]
-                "
-                alt=""
-              />
+              <img [src]="piece.imgLego" alt="" />
             </div>
           </td>
           <td *ngFor="let column of searchOptions">

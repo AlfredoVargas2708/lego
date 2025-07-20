@@ -14,7 +14,6 @@ export class Home implements OnInit {
   totalPages: number = 1;
   isLoading: boolean = false;
   legoData: any = [];
-  imagesData: any = [];
   searchOptions: any = [];
   resultOptions: any = [];
   selectedOption: string = '';
@@ -59,12 +58,18 @@ export class Home implements OnInit {
     this.legoService.getResults(this.selectedOption.toLowerCase(), selected, this.page, this.pageSize).subscribe({
       next: (response) => {
         this.legoData = response.data;
-        this.imagesData = response.imgData;
+        this.legoData = this.legoData.map((lego: any) => {
+          return {
+            ...lego,
+            imgPiece: response.imgData.codeImage ? response.imgData.codeImage : response.imgData.codeImages.find((img: any) => img.piece === lego.pieza).img,
+            imgLego: response.imgData.legoImage ? response.imgData.legoImage : response.imgData.legoImages.find((img: any) => img.lego === lego.lego).img
+          }
+        })
+        console.log(this.legoData)
         this.pageSize = response.pagination.pageSize;
         this.totalPages = response.pagination.totalPages;
         this.isLoading = false;
         this.cdr.markForCheck();
-        console.log(this.imagesData)
       },
       error: (error) => {
         console.error('Error al obtener las piezas de Lego:', error.error.message);
