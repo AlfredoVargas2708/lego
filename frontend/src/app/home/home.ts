@@ -1,17 +1,20 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { LegoService } from '../lego.service';
-
 @Component({
   selector: 'app-home',
   imports: [CommonModule],
+  standalone: true,
   templateUrl: './home.html',
   styleUrl: './home.scss'
 })
 export class Home implements OnInit {
   page: number = 1;
   pageSize: number = 10;
-  totalPages: number = 1;
+  totalPages: number = 0;
+  totalLegos: number = 0;
+  maxPagesToShow: number = 10;
+  valueSelected: string = '';
   isLoading: boolean = false;
   legoData: any = [];
   searchOptions: any = [];
@@ -52,6 +55,7 @@ export class Home implements OnInit {
   }
 
   getLegoPieces(selected: any) {
+    this.valueSelected = selected;
     this.resultOptions = [];
     this.searchInput.nativeElement.value = selected;
     this.isLoading = true;
@@ -61,13 +65,13 @@ export class Home implements OnInit {
         this.legoData = this.legoData.map((lego: any) => {
           return {
             ...lego,
-            imgPiece: response.imgData.codeImage ? response.imgData.codeImage : response.imgData.codeImages.find((img: any) => img.piece === lego.pieza).img,
-            imgLego: response.imgData.legoImage ? response.imgData.legoImage : response.imgData.legoImages.find((img: any) => img.lego === lego.lego).img
+            imgPiece: response.imgData.codeImage ? response.imgData.codeImage : response.imgData.codeImages.find((img: any) => img.piece === lego.pieza) ? response.imgData.codeImages.find((img: any) => img.piece === lego.pieza).img : '',
+            imgLego: response.imgData.legoImage ? response.imgData.legoImage : response.imgData.legoImages.find((img: any) => img.lego === lego.lego) ? response.imgData.legoImages.find((img: any) => img.lego === lego.lego).img : ''
           }
         })
-        console.log(this.legoData)
         this.pageSize = response.pagination.pageSize;
         this.totalPages = response.pagination.totalPages;
+        this.totalLegos = response.pagination.totalLegos;
         this.isLoading = false;
         this.cdr.markForCheck();
       },
@@ -75,5 +79,35 @@ export class Home implements OnInit {
         console.error('Error al obtener las piezas de Lego:', error.error.message);
       }
     });
+  }
+
+  onPageChange(page: number): void {
+    if (page >= 1 && page <= this.totalPages && page !== this.page) {
+      this.page = page;
+      this.getLegoPieces(this.valueSelected)
+    }
+  }
+
+  getPages(): number[] {
+    const pages: number[] = [];
+    let startPage = 1;
+    let endPage = this.totalPages;
+
+    if (this.totalPages > this.maxPagesToShow) {
+      const half = Math.floor(this.maxPagesToShow / 2);
+      startPage = Math.max(1, this.page - half);
+      endPage = startPage + this.maxPagesToShow - 1;
+
+      if (endPage > this.totalPages) {
+        endPage = this.totalPages;
+        startPage = Math.max(1, endPage - this.maxPagesToShow + 1);
+      }
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+
+    return pages;
   }
 }
