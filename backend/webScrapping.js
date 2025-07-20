@@ -3,6 +3,8 @@ const cheerio = require("cheerio");
 let legoUrl = "https://www.lego.com/service/building-instructions/";
 let codeUrl =
   "https://www.lego.com/cdn/product-assets/element.img.photoreal.192x192/code.jpg";
+let notFoundImage = "https://www.lego.com/cdn/cs/set/assets/blt25ecf37f37849299/one_missing_brick.webp?format=webply&fit=bounds&quality=75&width=500&height=500&dpr=1"
+let notFoundLego = "https://www.lego.com/service/building-instructions/1"
 
 const scrapping = async (legoData) => {
   try {
@@ -22,7 +24,11 @@ const scrapping = async (legoData) => {
       const legoImages = [];
 
       for (let i = 0; i < Object.keys(conteoLego).length; i++) {
-        legoUrls.push(legoUrl + Object.keys(conteoLego)[i]);
+        if (Object.keys(conteoLego)[i] !== "") {
+          legoUrls.push(legoUrl + Object.keys(conteoLego)[i]);
+        } else {
+          legoUrls.push(notFoundLego);
+        }
       }
 
       for (let i = 0; i < legoUrls.length; i++) {
@@ -55,7 +61,11 @@ const scrapping = async (legoData) => {
       let codeImages = [];
 
       for (let i = 0; i < Object.keys(conteoCode).length; i++) {
-        codeImages.push(codeUrl.replace("code", Object.keys(conteoCode)[i]));
+        if (Object.keys(conteoCode)[i] !== "") {
+          codeImages.push(codeUrl.replace("code", Object.keys(conteoCode)[i]));
+        } else {
+          codeImages.push(notFoundImage);
+        }
       }
 
       return { legoImage, codeImages };
@@ -63,8 +73,8 @@ const scrapping = async (legoData) => {
       (Object.keys(conteoCode).length === 1 &&
         Object.keys(conteoLego).length) === 1
     ) {
-      codeImage = codeUrl.replace("code", Object.keys(conteoCode));
-      legoUrl = legoUrl + Object.keys(conteoLego)[0];
+      codeImage = Object.keys(conteoCode)[0] !== '' ? codeUrl.replace("code", Object.keys(conteoCode)) : notFoundImage;
+      legoUrl = Object.keys(conteoLego)[0] !== '' ? legoUrl = legoUrl + Object.keys(conteoLego)[0] : notFoundLego;
 
       const { data } = await axios.get(legoUrl);
       const $ = cheerio.load(data);
