@@ -10,10 +10,10 @@ import { LegoService } from '../lego.service';
 })
 export class Home implements OnInit {
   page: number = 1;
-  pageSize: number = 10;
+  pageSize: number = 6;
   totalPages: number = 0;
   totalLegos: number = 0;
-  maxPagesToShow: number = 10;
+  maxPagesToShow: number = 6;
   valueSelected: string = '';
   isLoading: boolean = false;
   legoData: any = [];
