@@ -33,10 +33,11 @@ export class Home implements OnInit {
 
   ngOnInit(): void {
     this.legoService.getColumns().subscribe((result) => {
-      this.searchOptions = result.nombres_columnas
+      result = result.nombres_columnas.filter((column: any) => column.column_name !== 'id')
+      this.searchOptions = result.map((column: any) => column.column_name)
       this.searchOptions.forEach((option: any) => {
-        this.addLegoForm.addControl(option.toLowerCase(), new FormControl(''));
-        this.editLegoForm.addControl(option.toLowerCase(), new FormControl(''));
+        this.addLegoForm.addControl(option.column_name, new FormControl(''));
+        this.editLegoForm.addControl(option.column_name, new FormControl(''));
       });
       this.cdr.markForCheck();
     })
