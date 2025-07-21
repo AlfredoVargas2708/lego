@@ -128,6 +128,31 @@ app.put("/edit", async (req, res) => {
   }
 });
 
+app.post("/add", async (req, res) => {
+  try {
+    const { legoData } = req.body;
+    
+    if (!legoData) {
+      return res.status(400).send({ message: "Faltan datos en la consulta" });
+    }
+
+    const columns = Object.keys(legoData);
+    const values = Object.values(legoData);
+
+    const query = `INSERT INTO lego (${columns.map((column) => column !== 'id')}) VALUES (${values.map((value) => value)}) RETURNING *`
+    const result = await pool.query(query);
+
+    if (result.rows.length === 0) {
+      return res.status(400).send({ message: "Error al agregar lego", data: [] });
+    }
+
+    res.status(201).send({ message: "Lego agregado correctamente", data: result.rows });
+  } catch (error) {
+    console.error('Error in add route:', error);
+    res.status(500).send({ message: "Internal Server Error" });
+  }
+})
+
 app.listen(PORT, () => {
   console.log(`Server running in http://localhost:3000`);
 });
