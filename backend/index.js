@@ -1,8 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const pool = require("./db-config");
-const { scrapeLegoData } = require("./webScrapping");
-const capitalize = require("./capitalize");
+const { scrapeLegoData, config, fetchLegoImage } = require("./webScrapping");
 
 require("dotenv").config();
 
@@ -131,27 +130,67 @@ app.put("/edit", async (req, res) => {
 app.post("/add", async (req, res) => {
   try {
     const { legoData } = req.body;
-    
+
     if (!legoData) {
       return res.status(400).send({ message: "Faltan datos en la consulta" });
     }
 
-    const columns = Object.keys(legoData);
-    const values = Object.values(legoData);
+    const filteredData = Object.entries(legoData).reduce(
+      (acc, [key, value]) => {
+        if (value !== "" && value !== null && value !== undefined) {
+          acc[key] = value;
+        }
+        return acc;
+      },
+      {}
+    );
 
-    const query = `INSERT INTO lego (${columns.map((column) => column !== 'id')}) VALUES (${values.map((value) => value)}) RETURNING *`
+    if (Object.keys(filteredData).length === 0) {
+      return res
+        .status(400)
+        .send({ message: "No hay datos válidos para insertar" });
+    }
+
+    const columns = Object.keys(filteredData);
+    const values = Object.values(filteredData);
+    const placeholders = values.map((_, i) => `$${i + 1}`).join(", ");
+
+    const query = {
+      text: `INSERT INTO lego (${columns.join(
+        ", "
+      )}) VALUES (${placeholders}) RETURNING *`,
+      values: values,
+    };
+
+    let { codeImageBaseUrl } = config;
+
+    codeImageBaseUrl = `${codeImageBaseUrl}${filteredData['pieza']}.jpg`;
+
+    const legoUrl = await fetchLegoImage(filteredData['lego'])
+
     const result = await pool.query(query);
 
     if (result.rows.length === 0) {
-      return res.status(400).send({ message: "Error al agregar lego", data: [] });
+      return res
+        .status(400)
+        .send({ message: "Error al agregar lego", data: [] });
     }
 
-    res.status(201).send({ message: "Lego agregado correctamente", data: result.rows });
+    const imgData = await scrapeLegoData(result.rows);
+
+    res.status(201).send({
+      message: "Lego agregado correctamente",
+      data: result.rows[0],
+      imgData
+    });
   } catch (error) {
-    console.error('Error in add route:', error);
-    res.status(500).send({ message: "Internal Server Error" });
+    console.error("Error in add route:", error);
+    res.status(500).send({
+      message: "Internal Server Error",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
   }
-})
+});
 
 app.listen(PORT, () => {
   console.log(`Server running in http://localhost:3000`);

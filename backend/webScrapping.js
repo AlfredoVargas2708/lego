@@ -115,4 +115,4 @@ const scrapeLegoData = async (legoData) => {
   }
 };
 
-module.exports = { scrapeLegoData };
+module.exports = { scrapeLegoData, config, fetchLegoImage};

@@ -56,7 +56,7 @@
       </div>
     </div>
   </div>
-  <div class="table-responsive mt-4" *ngIf="legoData.length > 0 && !isLoading">
+  <div class="table-responsive mt-4" *ngIf="legoData.length > 0 || !isLoading">
     <table class="table table-stripped">
       <thead>
         <tr>
@@ -192,7 +192,7 @@
         class="btn btn-primary"
         data-bs-dismiss="offcanvas"
         aria-label="Close"
-        (click)="isAdding ? null : editLego()"
+        (click)="isAdding ? addLego() : editLego()"
       >
         {{ isAdding ? "Agregar Nuevo Lego" : "Guardar Cambios" }}
       </button>
