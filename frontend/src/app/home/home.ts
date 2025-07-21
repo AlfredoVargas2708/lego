@@ -16,10 +16,12 @@ export class Home implements OnInit {
   totalLegos: number = 0;
   maxPagesToShow: number = 6;
   valueSelected: string = '';
+  activeField: string = '';
   isLoading: boolean = false;
   legoData: any = [];
   searchOptions: any = [];
   resultOptions: any = [];
+  inputFormOptions: any = [];
   selectedOption: string = '';
   isAdding: boolean = true;
 
@@ -27,16 +29,17 @@ export class Home implements OnInit {
   editLegoForm: FormGroup = new FormGroup({})
 
   @ViewChild('searchInput') searchInput!: ElementRef;
+  @ViewChild('formInput') formInput!: ElementRef;
 
   constructor(private legoService: LegoService, private cdr: ChangeDetectorRef, private fb: FormBuilder) {
   }
 
   ngOnInit(): void {
     this.legoService.getColumns().subscribe((result) => {
-      this.searchOptions = result.nombres_columnas
-      this.searchOptions.forEach((option: any) => {
-        this.addLegoForm.addControl(option.toLowerCase(), new FormControl(''));
-        this.editLegoForm.addControl(option.toLowerCase(), new FormControl(''));
+      this.searchOptions = result.nombres_columnas.filter((column: any) => column.column_name !== 'id').map((column: any) => column.column_name)
+      result.nombres_columnas.forEach((option: any) => {
+        this.addLegoForm.addControl(option.column_name, new FormControl(''));
+        this.editLegoForm.addControl(option.column_name, new FormControl(''));
       });
       this.cdr.markForCheck();
     })
@@ -62,6 +65,40 @@ export class Home implements OnInit {
         this.cdr.markForCheck();
       }
     })
+  }
+
+  getOptionsInForm(event: any, fieldName: string) {
+    this.activeField = fieldName;
+
+    const value = event.target.value;
+    if (value.trim() === '') {
+      this.inputFormOptions = [];
+      return;
+    }
+
+    this.legoService.getOptions(fieldName.toLowerCase(), value).subscribe({
+      next: (res) => {
+        this.inputFormOptions = res.data;
+        this.cdr.markForCheck();
+      },
+      error: (err) => {
+        console.error('Error:', err);
+        this.inputFormOptions = [];
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  addNewValueToForm(value: any) {
+    if (this.isAdding) {
+      this.addLegoForm.get(this.activeField)?.setValue(value);
+      this.inputFormOptions = [];
+      this.cdr.markForCheck();
+    } else {
+      this.editLegoForm.get(this.activeField)?.setValue(value);
+      this.inputFormOptions = [];
+      this.cdr.markForCheck();
+    }
   }
 
   getLegoPieces(selected: any) {
@@ -121,12 +158,26 @@ export class Home implements OnInit {
     return pages;
   }
 
-  agregarLego() {
+  openAddLego() {
     this.isAdding = true;
   }
 
-  editarLego(piece: any) {
+  openEditLego(piece: any) {
     this.isAdding = false;
     this.editLegoForm.patchValue(piece);
+  }
+
+  editLego() {
+    const editData = this.editLegoForm.value;
+    this.legoService.editLego(editData).subscribe({
+      next: (response) => {
+        console.log(response);
+        this.legoData = this.legoData.map((lego: any) => lego.id === editData.id ? { ...lego, ...editData } : lego);
+        this.cdr.markForCheck();
+      },
+      error: (error) => {
+        console.error('Error al editar el lego:', error.error.message)
+      }
+    })
   }
 }
