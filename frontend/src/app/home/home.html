@@ -48,7 +48,7 @@
       </div>
     </div>
   </div>
-  <div class="table-responsive mt-4" *ngIf="!isLoading && legoData.length > 0">
+  <div class="table-responsive mt-4" *ngIf="legoData.length > 0">
     <table class="table table-stripped">
       <thead>
         <tr>
@@ -109,7 +109,7 @@
       </div>
     </nav>
   </div>
-  <div class="loader-container" *ngIf="isLoading">
+  <div class="loader-container" *ngIf="legoData.length === 0">
     <div class="loader"></div>
   </div>
 </div>
