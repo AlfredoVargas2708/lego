@@ -180,4 +180,24 @@ export class Home implements OnInit {
       }
     })
   }
+
+  addLego() {
+    const addData = this.addLegoForm.value;
+    this.legoService.addLego(addData).subscribe({
+      next: (response) => {
+        this.legoData.push(response.data);
+        this.legoData = this.legoData.map((lego: any) => {
+          return {
+            ...lego,
+            imgPiece: response.imgData.codeImage,
+            imgLego: response.imgData.legoImage
+          }
+        })
+        this.cdr.markForCheck();
+      },
+      error: (error) => {
+        console.error("Error al agregar el lego:", error.error.message);
+      }
+    })
+  }
 }
