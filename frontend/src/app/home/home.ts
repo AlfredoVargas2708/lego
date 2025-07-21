@@ -38,7 +38,7 @@ export class Home implements OnInit {
     this.legoService.getColumns().subscribe((result) => {
       this.searchOptions = result.nombres_columnas.filter((column: any) => column.column_name !== 'id').map((column: any) => column.column_name)
       result.nombres_columnas.forEach((option: any) => {
-        this.addLegoForm.addControl(option.column_name, new FormControl(''));
+        option.column_name !== 'id' ? this.addLegoForm.addControl(option.column_name, new FormControl('')) : null;
         this.editLegoForm.addControl(option.column_name, new FormControl(''));
       });
       this.cdr.markForCheck();
