@@ -11,7 +11,7 @@
         data-bs-toggle="offcanvas"
         data-bs-target="#offcanvasForms"
         aria-controls="offcanvasForms"
-        (click)="agregarLego()"
+        (click)="openAddLego()"
       >
         Agregar Nueva Pieza
       </button>
@@ -85,7 +85,7 @@
             <div class="btn-cell">
               <button
                 class="btn btn-primary"
-                (click)="editarLego(piece)"
+                (click)="openEditLego(piece)"
                 data-bs-toggle="offcanvas"
                 data-bs-target="#offcanvasForms"
                 aria-controls="offcanvasForms"
@@ -131,7 +131,7 @@
       </div>
     </nav>
   </div>
-  <div class="loader-container" *ngIf="legoData.length === 0 && isLoading">
+  <div class="loader-container" *ngIf="isLoading">
     <div class="loader"></div>
   </div>
 
@@ -161,17 +161,41 @@
           class="form-group mb-2"
           *ngFor="let controlName of addLegoForm.controls | keyvalue"
         >
-          <label [for]="controlName.key" class="form-label">{{
-            controlName.key
-          }}</label>
-          <input
-            type="text"
-            [formControlName]="controlName.key"
-            class="form-control"
-          />
+          <label [for]="controlName.key" class="form-label">
+            {{ controlName.key }}
+          </label>
+
+          <div class="d-flex flex-column position-relative">
+            <input
+              type="text"
+              class="form-control"
+              [formControlName]="controlName.key"
+              (input)="getOptionsInForm($event, controlName.key)"
+              [attr.data-field]="controlName.key"
+            />
+
+            <!-- Muestra solo si es el campo activo -->
+            <div
+              class="results-form-container"
+              *ngIf="
+                inputFormOptions.length > 0 && activeField === controlName.key
+              "
+            >
+              <div class="result" *ngFor="let result of inputFormOptions" (click)="addNewValueToForm(result)">
+                <p class="fs-5">{{ result }}</p>
+              </div>
+            </div>
+          </div>
         </div>
       </form>
-      <button class="btn btn-primary">{{ isAdding ? 'Agregar Nuevo Lego' : 'Guardar Cambios'}}</button>
+      <button
+        class="btn btn-primary"
+        data-bs-dismiss="offcanvas"
+        aria-label="Close"
+        (click)="isAdding ? null : editLego()"
+      >
+        {{ isAdding ? "Agregar Nuevo Lego" : "Guardar Cambios" }}
+      </button>
     </div>
   </div>
 </div>
