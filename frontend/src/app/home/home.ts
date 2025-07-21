@@ -1,9 +1,10 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { LegoService } from '../lego.service';
+import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 @Component({
   selector: 'app-home',
-  imports: [CommonModule],
+  imports: [CommonModule, ReactiveFormsModule],
   standalone: true,
   templateUrl: './home.html',
   styleUrl: './home.scss'
@@ -20,14 +21,23 @@ export class Home implements OnInit {
   searchOptions: any = [];
   resultOptions: any = [];
   selectedOption: string = '';
+  isAdding: boolean = true;
+
+  addLegoForm: FormGroup = new FormGroup({});
+  editLegoForm: FormGroup = new FormGroup({})
 
   @ViewChild('searchInput') searchInput!: ElementRef;
 
-  constructor(private legoService: LegoService, private cdr: ChangeDetectorRef) { }
+  constructor(private legoService: LegoService, private cdr: ChangeDetectorRef, private fb: FormBuilder) {
+  }
 
   ngOnInit(): void {
     this.legoService.getColumns().subscribe((result) => {
       this.searchOptions = result.nombres_columnas
+      this.searchOptions.forEach((option: any) => {
+        this.addLegoForm.addControl(option.toLowerCase(), new FormControl(''));
+        this.editLegoForm.addControl(option.toLowerCase(), new FormControl(''));
+      });
       this.cdr.markForCheck();
     })
   }
@@ -109,5 +119,14 @@ export class Home implements OnInit {
     }
 
     return pages;
+  }
+
+  agregarLego() {
+    this.isAdding = true;
+  }
+
+  editarLego(piece: any) {
+    this.isAdding = false;
+    this.editLegoForm.patchValue(piece);
   }
 }

@@ -6,7 +6,15 @@
   </div>
   <div class="row">
     <div class="d-flex justify-content-center col-md-12 mt-4">
-      <button class="btn btn-success">Agregar Nueva Pieza</button>
+      <button
+        class="btn btn-success"
+        data-bs-toggle="offcanvas"
+        data-bs-target="#offcanvasForms"
+        aria-controls="offcanvasForms"
+        (click)="agregarLego()"
+      >
+        Agregar Nueva Pieza
+      </button>
     </div>
   </div>
   <div class="row justify-content-center gap-3">
@@ -55,6 +63,7 @@
           <th>Imagen Pieza</th>
           <th>Imagen Set</th>
           <th *ngFor="let header of searchOptions">{{ header }}</th>
+          <th></th>
         </tr>
       </thead>
       <tbody>
@@ -71,6 +80,19 @@
           </td>
           <td *ngFor="let column of searchOptions">
             {{ piece[column.toLowerCase()] }}
+          </td>
+          <td>
+            <div class="btn-cell">
+              <button
+                class="btn btn-primary"
+                (click)="editarLego(piece)"
+                data-bs-toggle="offcanvas"
+                data-bs-target="#offcanvasForms"
+                aria-controls="offcanvasForms"
+              >
+                Editar Lego
+              </button>
+            </div>
           </td>
         </tr>
       </tbody>
@@ -111,5 +133,45 @@
   </div>
   <div class="loader-container" *ngIf="legoData.length === 0 && isLoading">
     <div class="loader"></div>
+  </div>
+
+  <div
+    class="offcanvas offcanvas-end"
+    tabindex="-1"
+    id="offcanvasForms"
+    aria-labelledby="offcanvasFormsLabel"
+  >
+    <div class="offcanvas-header">
+      <h5 class="offcanvas-title" id="offcanvasFormsLabel">
+        Agregar Nuevo Lego
+      </h5>
+      <button
+        type="button"
+        class="btn-close"
+        data-bs-dismiss="offcanvas"
+        aria-label="Close"
+      ></button>
+    </div>
+    <div class="offcanvas-body">
+      <form
+        [formGroup]="isAdding ? addLegoForm : editLegoForm"
+        class="add-form mb-4"
+      >
+        <div
+          class="form-group mb-2"
+          *ngFor="let controlName of addLegoForm.controls | keyvalue"
+        >
+          <label [for]="controlName.key" class="form-label">{{
+            controlName.key
+          }}</label>
+          <input
+            type="text"
+            [formControlName]="controlName.key"
+            class="form-control"
+          />
+        </div>
+      </form>
+      <button class="btn btn-primary">{{ isAdding ? 'Agregar Nuevo Lego' : 'Guardar Cambios'}}</button>
+    </div>
   </div>
 </div>
