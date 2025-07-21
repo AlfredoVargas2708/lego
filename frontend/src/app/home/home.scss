@@ -87,3 +87,13 @@
 .page-link {
   cursor: pointer;
 }
+
+.add-form {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+
+  label {
+    text-transform: capitalize;
+  }
+}
