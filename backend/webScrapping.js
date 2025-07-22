@@ -65,17 +65,18 @@ const scrapeLegoData = async (legoData) => {
 
     // Procesamiento de imágenes LEGO
     const processLegoImages = async () => {
-      const results = [];
-      for (const legoId of uniqueLegos) {
+      const imagePromises = uniqueLegos.map(async (legoId) => {
         const imageUrl = legoId
           ? await fetchLegoImage(legoId)
           : config.notFoundImage;
-        results.push({
+
+        return {
           img: imageUrl || config.notFoundImage,
           lego: legoId || "unknown",
-        });
-      }
-      return results;
+        };
+      });
+
+      return await Promise.all(imagePromises);
     };
 
     // Lógica principal más clara
@@ -115,4 +116,4 @@ const scrapeLegoData = async (legoData) => {
   }
 };
 
-module.exports = { scrapeLegoData, config, fetchLegoImage};
+module.exports = { scrapeLegoData, config, fetchLegoImage };
