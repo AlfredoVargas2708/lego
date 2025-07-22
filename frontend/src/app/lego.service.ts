@@ -27,4 +27,8 @@ export class LegoService {
   addLego(legoData: any): Observable<any> {
     return this.http.post(`${environment.apiUrl}/add`, { legoData });
   }
+
+  deleteLego(id: any): Observable<any> {
+    return this.http.delete(`${environment.apiUrl}/delete/${id}`)
+  }
 }

@@ -50,6 +50,12 @@
   }
 }
 
+.btn-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .loader-container {
   display: flex;
   justify-content: center;

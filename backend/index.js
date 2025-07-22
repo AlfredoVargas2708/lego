@@ -192,6 +192,20 @@ app.post("/add", async (req, res) => {
   }
 });
 
+app.delete("/delete/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const query = "DELETE FROM lego WHERE id = $1";
+    await pool.query(query, [id]);
+
+    res.status(201).send({ message: "Lego eliminado correctamente "});
+  } catch (error) {
+    console.error('Error in delete route:', error);
+    res.status(500).send({ message: "Internal Server Error" });
+  }
+})
+
 app.listen(PORT, () => {
   console.log(`Server running in http://localhost:3000`);
 });

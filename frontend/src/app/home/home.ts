@@ -200,4 +200,17 @@ export class Home implements OnInit {
       }
     })
   }
+
+  deleteLego(id: number) {
+    this.legoService.deleteLego(id).subscribe({
+      next: (result) => {
+        console.log(result);
+        this.legoData = this.legoData.filter((lego: any) => lego.id !== id);
+        this.cdr.markForCheck();
+      },
+      error: (error) => {
+        console.error('Error al eliminar el lego:', error.error.message);
+      }
+    })
+  }
 }
