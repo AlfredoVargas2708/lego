@@ -203,7 +203,7 @@ export class Home implements OnInit {
     })
   }
 
-  deleteLego(id: number) {
+  deleteLego(id: number, lego: number) {
     Swal.fire({
       title: "Confirmación",
       text: "¿Estás seguro de eliminar el lego?",
@@ -217,7 +217,8 @@ export class Home implements OnInit {
         this.legoService.deleteLego(id).subscribe({
           next: (result) => {
             console.log(result);
-            this.getLegoPieces(this.valueSelected)
+            this.selectedOption = 'lego'
+            this.getLegoPieces(lego)
             this.cdr.markForCheck();
           },
           error: (error) => {
