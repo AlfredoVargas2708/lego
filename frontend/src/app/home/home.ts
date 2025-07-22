@@ -2,6 +2,8 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectorRef, Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { LegoService } from '../lego.service';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import Swal from 'sweetalert2';
+
 @Component({
   selector: 'app-home',
   imports: [CommonModule, ReactiveFormsModule],
@@ -202,15 +204,32 @@ export class Home implements OnInit {
   }
 
   deleteLego(id: number) {
-    this.legoService.deleteLego(id).subscribe({
-      next: (result) => {
-        console.log(result);
-        this.legoData = this.legoData.filter((lego: any) => lego.id !== id);
-        this.cdr.markForCheck();
-      },
-      error: (error) => {
-        console.error('Error al eliminar el lego:', error.error.message);
+    Swal.fire({
+      title: "Confirmación",
+      text: "¿Estás seguro de eliminar el lego?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Si!"
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.legoService.deleteLego(id).subscribe({
+          next: (result) => {
+            console.log(result);
+            this.getLegoPieces(this.valueSelected)
+            this.cdr.markForCheck();
+          },
+          error: (error) => {
+            console.error('Error al eliminar el lego:', error.error.message);
+          }
+        })
+        Swal.fire({
+          title: "Eliminado",
+          text: "El lego ha sido eliminado",
+          icon: "success"
+        });
       }
-    })
+    });
   }
 }
