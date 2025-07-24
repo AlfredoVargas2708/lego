@@ -38,11 +38,11 @@ export class Home implements OnInit {
 
   ngOnInit(): void {
     this.legoService.getColumns().subscribe((result) => {
-      this.searchOptions = result.nombres_columnas.filter((column: any) => column.column_name !== 'id').map((column: any) => column.column_name)
-      result.nombres_columnas.forEach((option: any) => {
-        option.column_name !== 'id' ? this.addLegoForm.addControl(option.column_name, new FormControl('')) : null;
-        this.editLegoForm.addControl(option.column_name, new FormControl(''));
-      });
+      this.searchOptions = result.columnas.filter((column: any) => column !== 'id')
+      result.columnas.forEach((option: any) => {
+        this.addLegoForm.addControl(option, new FormControl(''));
+        this.editLegoForm.addControl(option, new FormControl(''));
+      })
       this.cdr.markForCheck();
     })
   }
@@ -110,12 +110,19 @@ export class Home implements OnInit {
     this.isLoading = true;
     this.legoService.getResults(this.selectedOption.toLowerCase(), selected, this.page, this.pageSize).subscribe({
       next: (response) => {
+        console.log(response);
         this.legoData = response.data;
         this.legoData = this.legoData.map((lego: any) => {
           return {
             ...lego,
-            imgPiece: response.imgData.codeImage ? response.imgData.codeImage : response.imgData.codeImages.find((img: any) => img.piece === lego.pieza) ? response.imgData.codeImages.find((img: any) => img.piece === lego.pieza).img : '',
-            imgLego: response.imgData.legoImage ? response.imgData.legoImage : response.imgData.legoImages.find((img: any) => img.lego === lego.lego) ? response.imgData.legoImages.find((img: any) => img.lego === lego.lego).img : ''
+            imgLego: response.imgData.imgLego ? response.imgData.imgLego :
+            response.imgData.legoImages.some((img: any) => img.lego === lego.lego) ?
+            response.imgData.legoImages.find((img: any) => img.lego === lego.lego).url :
+            response.imgData.legoImages.find((img: any) => img.lego === '').url,
+            imgPiece: response.imgData.imgPiece ? response.imgData.imgPiece :
+            response.imgData.piezaImages.some((img: any) => img.pieza === lego.pieza) ?
+            response.imgData.piezaImages.find((img: any) => img.pieza === lego.pieza).url :
+            response.imgData.piezaImages.find((img: any) => img.pieza === '').url
           }
         })
         this.pageSize = response.pagination.pageSize;
@@ -174,7 +181,7 @@ export class Home implements OnInit {
     this.legoService.editLego(editData).subscribe({
       next: (response) => {
         console.log(response);
-        this.legoData = this.legoData.map((lego: any) => lego.id === editData.id ? { ...lego, ...editData } : lego);
+        this.legoData = this.legoData.map((lego: any) => lego.id === editData.id ? { ...lego, ...editData, imgPiece : response.imgData.imgPiece, imgLego : response.imgData.imgLego} : lego);
         this.cdr.markForCheck();
       },
       error: (error) => {
@@ -187,14 +194,18 @@ export class Home implements OnInit {
     const addData = this.addLegoForm.value;
     this.legoService.addLego(addData).subscribe({
       next: (response) => {
-        this.legoData.push(response.data);
-        this.legoData = this.legoData.map((lego: any) => {
-          return {
-            ...lego,
-            imgPiece: response.imgData.codeImage,
-            imgLego: response.imgData.legoImage
-          }
-        })
+        console.log(response);
+        if (this.addLegoForm.get('lego')?.value !== '') {
+          this.selectedOption = 'lego';
+          this.getLegoPieces(this.addLegoForm.get('lego')?.value)
+        } else if (this.addLegoForm.get('pieza')?.value !== '') {
+          this.selectedOption = 'pieza';
+          this.getLegoPieces(this.addLegoForm.get('pieza')?.value)
+        } else {
+          this.selectedOption = 'lego';
+          this.getLegoPieces(this.addLegoForm.get('lego')?.value)
+        }
+        this.addLegoForm.reset();
         this.cdr.markForCheck();
       },
       error: (error) => {

@@ -1,9 +1,8 @@
 const express = require("express");
 const cors = require("cors");
-const pool = require("./db-config");
-const { scrapeLegoData, config, fetchLegoImage } = require("./webScrapping");
-
 require("dotenv").config();
+const pool = require("./db-config");
+const { scrapeLegoData } = require("./webScrapping");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -11,105 +10,76 @@ const PORT = process.env.PORT || 3000;
 app.use(cors({ origin: "*" }));
 app.use(express.json());
 
-app.get("/nombres-columnas/:tabla", async (req, res) => {
+app.get("/nombres-columnas", async (req, res) => {
   try {
-    const { tabla } = req.params;
-    const query = `
-      SELECT column_name 
-      FROM information_schema.columns 
-      WHERE table_name = $1
-      ORDER BY ordinal_position;
-    `;
+    const query = 'SELECT column_name FROM information_schema.columns WHERE table_name = \'lego\' ORDER BY ordinal_position';
+    const result = (await pool.query(query)).rows;
 
-    const result = await pool.query(query, [tabla]);
-    const nombresColumnas = result.rows;
-
-    res.json({
-      tabla: tabla,
-      nombres_columnas: nombresColumnas,
-    });
+    res.status(200).send({ columnas: result.map((column) => column.column_name) });
   } catch (error) {
-    console.error("Error:", error);
-    res
-      .status(500)
-      .json({ error: "Error al obtener los nombres de las columnas" });
-  }
-});
-
-app.get("/options/:column/:value", async (req, res) => {
-  try {
-    const { column, value } = req.params;
-
-    if (!column || !value) {
-      return res
-        .status(400)
-        .send({ message: "Faltan valores a la consulta", data: [] });
-    }
-
-    const query = `SELECT DISTINCT ${column} FROM lego WHERE ${column} ILIKE $1 ORDER BY ${column}`;
-    const result = await pool.query(query, [`%${value}%`]);
-
-    if (result.rows.length === 0) {
-      return res.status(400).send({ message: "No hay opciones", data: [] });
-    }
-
-    res.status(200).send({
-      message: "Opciones encontradas",
-      data: result.rows.map((col) => col[column]),
-    });
-  } catch (error) {
-    console.error("Error in options route:", error);
+    console.error("Error al obtener los nombres de las columnas", error);
     res.status(500).send({ message: "Internal Server Error" });
   }
 });
 
-app.get("/search/:column/:value", async (req, res) => {
+app.get("/opciones/:columna/:valor", async (req, res) => {
   try {
-    const { column, value } = req.params;
+    const { columna, valor } = req.params;
+
+    if (!columna || !valor) {
+      return res.status(400).send({ message: "Faltan datos en la consulta", data: [] });
+    }
+
+    const query = `SELECT DISTINCT ${columna} FROM lego WHERE ${columna} ILIKE $1 ORDER BY ${columna}`;
+    const result = (await pool.query(query, [`%${valor}%`])).rows;
+
+    if (result.length === 0) {
+      return res.status(400).send({ message: "No existen opciones para el valor", data: [] });
+    }
+
+    res.status(200).send({ message: "Opciones encontradas", data: result.map((opcion) => opcion[columna]) });
+  } catch (error) {
+    console.error("Error al obtener las opciones:", error);
+    res.status(500).send({ message: "Internal Server Error" });
+  }
+});
+
+app.get("/resultados/:columna/:valor", async (req, res) => {
+  try {
+    const { columna, valor } = req.params;
     const { page, pageSize } = req.query;
 
-    if (!column || !value || !page || !pageSize) {
-      return res
-        .status(400)
-        .send({ message: "Faltan valores a la consulta", data: [] });
+    if (!columna || !valor || !page || !pageSize) {
+      return res.status(400).send({ message: "Faltan datos en la consulta", data: [] });
     }
 
     const offset = (page - 1) * pageSize;
 
-    const query = `SELECT * FROM lego WHERE ${column} = $1 ORDER BY id LIMIT $2 OFFSET $3`;
-    const result = await pool.query(query, [value, pageSize, offset]);
+    const query = `SELECT * FROM lego WHERE ${columna} = $1 ORDER BY id LIMIT $2 OFFSET $3`;
+    const result = (await pool.query(query, [valor, pageSize, offset])).rows;
 
-    const count = await pool.query(
-      `SELECT COUNT(*) FROM lego WHERE ${column} = $1`,
-      [value]
-    );
+    if (result.length === 0) {
+      return res.status(400).send({ message: "No se encontraron resultados", data: [] });
+    }
 
-    const imgData = await scrapeLegoData(result.rows);
+    const totalLegos = (await pool.query(`SELECT COUNT(*) FROM lego WHERE ${columna} = $1`,[valor])).rows[0].count;
+    const totalPages = Math.ceil(totalLegos / pageSize);
 
-    res.status(200).send({
-      message: "Legos encontrados",
-      data: result.rows,
-      imgData,
-      pagination: {
-        page,
-        pageSize,
-        totalLegos: count.rows[0].count,
-        totalPages: Math.ceil(count.rows[0].count / pageSize),
-      },
-    });
+    const imgData = await scrapeLegoData(result)
+
+    res.status(200).send({ message: "Legos encontrados", data: result, imgData, pagination: { page, pageSize, totalLegos: totalLegos, totalPages: totalPages }});
   } catch (error) {
-    console.error("Error in search route:", error);
+    console.error("Error al buscar resultados:", error);
     res.status(500).send({ message: "Internal Server Error:", error });
   }
 });
 
-app.put("/edit", async (req, res) => {
+app.put("/editar", async (req, res) => {
   try {
     const { legoData } = req.body;
 
-    if (!legoData) {
-      return res.status(400).send({ message: "Faltan valores para editar" });
-    }
+    if (!legoData) return res.status(400).send({ message: "Flatn valores en la consulta" });
+
     const { id, ...fields } = legoData;
 
     const columns = Object.keys(fields);
@@ -117,82 +87,43 @@ app.put("/edit", async (req, res) => {
 
     for (let i = 0; i < columns.length; i++) {
       const query = `UPDATE lego SET ${columns[i]} = $1 WHERE id = $2`;
-      await pool.query(query, [values[i], id]);
+      await pool.query(query, [values[i], id])
     }
 
-    res.status(201).send({ message: "Lego editado correctamente" });
+    const imgData = await scrapeLegoData([legoData]);
+
+    res.status(201).send({ message: "Lego editado correctamente", imgData });
   } catch (error) {
-    console.error("Error in edit route:", error);
+    console.error("Error al editar lego:", error);
     res.status(500).send({ message: "Internal Server Error" });
   }
 });
 
-app.post("/add", async (req, res) => {
+app.post("/agregar", async(req, res) => {
   try {
     const { legoData } = req.body;
 
     if (!legoData) {
-      return res.status(400).send({ message: "Faltan datos en la consulta" });
+      return res.status(400).send({ message: "Faltan datos en la consulta", data: [] });
     }
 
-    const filteredData = Object.entries(legoData).reduce(
-      (acc, [key, value]) => {
-        if (value !== "" && value !== null && value !== undefined) {
-          acc[key] = value;
-        }
-        return acc;
-      },
-      {}
-    );
+    const columns = Object.keys(legoData).filter((column) => legoData[column]);
+    const values = Object.values(legoData).filter((value) => value);
 
-    if (Object.keys(filteredData).length === 0) {
-      return res
-        .status(400)
-        .send({ message: "No hay datos válidos para insertar" });
-    }
+    const query = `INSERT INTO lego (${columns}) VALUES (${values}) RETURNING *`
+    console.log(query)
+    const result = (await pool.query(query)).rows;
 
-    const columns = Object.keys(filteredData);
-    const values = Object.values(filteredData);
-    const placeholders = values.map((_, i) => `$${i + 1}`).join(", ");
+    const imgData = await scrapeLegoData([legoData]);
 
-    const query = {
-      text: `INSERT INTO lego (${columns.join(
-        ", "
-      )}) VALUES (${placeholders}) RETURNING *`,
-      values: values,
-    };
-
-    let { codeImageBaseUrl } = config;
-
-    codeImageBaseUrl = `${codeImageBaseUrl}${filteredData['pieza']}.jpg`;
-
-    const legoUrl = await fetchLegoImage(filteredData['lego'])
-
-    const result = await pool.query(query);
-
-    if (result.rows.length === 0) {
-      return res
-        .status(400)
-        .send({ message: "Error al agregar lego", data: [] });
-    }
-
-    const imgData = await scrapeLegoData(result.rows);
-
-    res.status(201).send({
-      message: "Lego agregado correctamente",
-      data: result.rows[0],
-      imgData
-    });
+    res.status(201).send({ message: "Lego agregado correctamente", data: result, imgData });
   } catch (error) {
-    console.error("Error in add route:", error);
-    res.status(500).send({
-      message: "Internal Server Error",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined,
-    });
+    console.error('Error al agregar lego:', error);
+    res.status(500).send({ message: "Internal Server Error "});
   }
 });
 
-app.delete("/delete/:id", async (req, res) => {
+app.delete("/eliminar/:id", async (req, res) => {
   try {
     const { id } = req.params;
 

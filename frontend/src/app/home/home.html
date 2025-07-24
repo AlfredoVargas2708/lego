@@ -92,7 +92,10 @@
               >
                 Editar Lego
               </button>
-              <button class="btn btn-danger" (click)="deleteLego(piece.id, piece.lego)">
+              <button
+                class="btn btn-danger"
+                (click)="deleteLego(piece.id, piece.lego)"
+              >
                 Eliminar Lego
               </button>
             </div>
@@ -160,40 +163,42 @@
         [formGroup]="isAdding ? addLegoForm : editLegoForm"
         class="add-form mb-4"
       >
-        <div
-          class="form-group mb-2"
-          *ngFor="let controlName of addLegoForm.controls | keyvalue"
-        >
-          <label [for]="controlName.key" class="form-label">
-            {{ controlName.key }}
-          </label>
+        <ng-container *ngFor="let controlName of addLegoForm.controls | keyvalue">
+          <div
+            class="form-group mb-2"
+            *ngIf="controlName.key !== 'id'"
+          >
+            <label [for]="controlName.key" class="form-label">
+              {{ controlName.key }}
+            </label>
 
-          <div class="d-flex flex-column position-relative">
-            <input
-              type="text"
-              class="form-control"
-              [formControlName]="controlName.key"
-              (input)="getOptionsInForm($event, controlName.key)"
-              [attr.data-field]="controlName.key"
-            />
+            <div class="d-flex flex-column position-relative">
+              <input
+                type="text"
+                class="form-control"
+                [formControlName]="controlName.key"
+                (input)="getOptionsInForm($event, controlName.key)"
+                [attr.data-field]="controlName.key"
+              />
 
-            <!-- Muestra solo si es el campo activo -->
-            <div
-              class="results-form-container"
-              *ngIf="
-                inputFormOptions.length > 0 && activeField === controlName.key
-              "
-            >
+              <!-- Muestra solo si es el campo activo -->
               <div
-                class="result"
-                *ngFor="let result of inputFormOptions"
-                (click)="addNewValueToForm(result)"
+                class="results-form-container"
+                *ngIf="
+                  inputFormOptions.length > 0 && activeField === controlName.key
+                "
               >
-                <p class="fs-5">{{ result }}</p>
+                <div
+                  class="result"
+                  *ngFor="let result of inputFormOptions"
+                  (click)="addNewValueToForm(result)"
+                >
+                  <p class="fs-5">{{ result }}</p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </ng-container>
       </form>
       <button
         class="btn btn-primary"

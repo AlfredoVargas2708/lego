@@ -1,7 +1,6 @@
 const axios = require("axios");
 const cheerio = require("cheerio");
 
-// Configuración en un objeto para mejor organización
 const config = {
   legoBaseUrl: "https://www.lego.com/service/building-instructions/",
   codeImageBaseUrl:
@@ -11,7 +10,6 @@ const config = {
   notFoundLego: "https://www.lego.com/service/building-instructions/1",
 };
 
-// Función helper para contar repeticiones
 const countOccurrences = (array) => {
   return array.reduce((acc, item) => {
     acc[item] = (acc[item] || 0) + 1;
@@ -19,101 +17,53 @@ const countOccurrences = (array) => {
   }, {});
 };
 
-// Función helper para obtener imagen LEGO
-const fetchLegoImage = async (legoId) => {
-  try {
-    const url = legoId ? `${config.legoBaseUrl}${legoId}` : config.notFoundLego;
-    const { data } = await axios.get(url);
-    const $ = cheerio.load(data);
-
-    const imageElement = $('source[type="image/webp"]').first();
-    if (!imageElement.length) return null;
-
-    return imageElement.attr("srcset").split(",")[0].split(" ")[0];
-  } catch (error) {
-    console.error(`Error fetching LEGO image for ${legoId}:`, error.message);
-    return null;
-  }
-};
-
-// Función principal refactorizada
 const scrapeLegoData = async (legoData) => {
   try {
-    const legoSet = legoData.map((item) => item.lego);
-    const codeSet = legoData.map((item) => item.pieza);
+    legoData = legoData.map((lego) => {
+      return {
+        ...lego,
+        pieza: lego.pieza !== null ? lego.pieza : '',
+        lego: lego.lego !== null ? lego.lego : '',
+      }
+    });
+    if (legoData.length > 1) {
+      const legos = legoData.length > 0 ? legoData.map((lego) => lego.lego) : legoData.lego
+      const legoOpciones = Object.keys(countOccurrences(legos))
 
-    const codeCount = countOccurrences(codeSet);
-    const legoCount = countOccurrences(legoSet);
+      const piezas = legoData.length > 0 ? legoData.map((lego) => lego.pieza) : legoData.pieza;
+      const piezasOpciones = Object.keys(countOccurrences(piezas));
 
-    const uniqueCodes = Object.keys(codeCount);
-    const uniqueLegos = Object.keys(legoCount);
-
-    const hasSingleCode = uniqueCodes.length === 1;
-    const hasSingleLego = uniqueLegos.length === 1;
-    const hasMultipleCodes = uniqueCodes.length > 1;
-    const hasMultipleLegos = uniqueLegos.length > 1;
-
-    // Procesamiento de imágenes de códigos
-    const processCodeImages = () => {
-      return uniqueCodes.map((code) => ({
-        img: code
-          ? `${config.codeImageBaseUrl}${code}.jpg`
-          : config.notFoundImage,
-        piece: code || "unknown",
+      const legoImages = await Promise.all(legoOpciones.map(async (lego) => {
+          const url = lego !== '' ? `${config.legoBaseUrl}${lego}` : config.notFoundLego;
+          
+          const { data } = await axios.get(url);
+          const $ = cheerio.load(data);
+          const imageElement = `${$('source[type="image/webp"]').first().attr("srcset").split(",")[0].split(" ")[0]}`;
+          return { url: imageElement, lego };
       }));
-    };
 
-    // Procesamiento de imágenes LEGO
-    const processLegoImages = async () => {
-      const imagePromises = uniqueLegos.map(async (legoId) => {
-        const imageUrl = legoId
-          ? await fetchLegoImage(legoId)
-          : config.notFoundImage;
-
-        return {
-          img: imageUrl || config.notFoundImage,
-          lego: legoId || "unknown",
-        };
+      const piezaImages = piezasOpciones.map((pieza) => {
+        return pieza !== '' ? { url: `${config.codeImageBaseUrl}${pieza}.jpg`, pieza }: { url: config.notFoundImage, pieza : '' };
       });
 
-      return await Promise.all(imagePromises);
-    };
+      return { legoImages, piezaImages }; 
+    }
+     else if (legoData.length === 1){
+      const lego = legoData[0].lego;
+      const pieza = legoData[0].pieza;
 
-    // Lógica principal más clara
-    if (hasSingleCode && hasSingleLego) {
-      const codeImage = uniqueCodes[0]
-        ? `${config.codeImageBaseUrl}${uniqueCodes[0]}.jpg`
-        : config.notFoundImage;
+      const { data } = await axios.get(lego !== '' ? `${config.legoBaseUrl}${lego}` : config.notFoundLego);
+      const $ = cheerio.load(data);
 
-      const legoImage = await fetchLegoImage(uniqueLegos[0]);
+      const imgLego = `${$('source[type="image/webp"]').first().attr("srcset").split(",")[0].split(" ")[0]}`;
+      const imgPiece = pieza !== '' ? `${config.codeImageBaseUrl}${pieza}.jpg` : config.notFoundImage
 
-      return {
-        codeImage: codeImage,
-        legoImage: legoImage || config.notFoundImage,
-      };
-    } else if (hasSingleCode && hasMultipleLegos) {
-      return {
-        codeImage: uniqueCodes[0]
-          ? `${config.codeImageBaseUrl}${uniqueCodes[0]}.jpg`
-          : config.notFoundImage,
-        legoImages: await processLegoImages(),
-      };
-    } else if (hasMultipleCodes && hasSingleLego) {
-      return {
-        legoImage:
-          (await fetchLegoImage(uniqueLegos[0])) || config.notFoundImage,
-        codeImages: processCodeImages(),
-      };
-    } else if (hasMultipleCodes && hasMultipleLegos) {
-      return {
-        codeImages: processCodeImages(),
-        legoImages: await processLegoImages(),
-      };
+      return { imgLego, imgPiece }
     }
   } catch (error) {
-    console.error("Error in scrapeLegoData:", error);
-    throw error; // Re-lanzar el error para manejo superior
+    console.error('Error en realizar scrapping:', error);
+    return [];
   }
-};
+}
 
-module.exports = { scrapeLegoData, config, fetchLegoImage };
+module.exports = { scrapeLegoData }

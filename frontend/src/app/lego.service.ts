@@ -10,25 +10,25 @@ export class LegoService {
   constructor(private http: HttpClient) {}
 
   getColumns(): Observable<any> {
-    return this.http.get(`${environment.apiUrl}/nombres-columnas/lego`);
+    return this.http.get(`${environment.apiUrl}/nombres-columnas`);
   }
 
   getOptions(column: string, value: string): Observable<any> {
-    return this.http.get(`${environment.apiUrl}/options/${column}/${value}`);
+    return this.http.get(`${environment.apiUrl}/opciones/${column}/${value}`);
   }
 
   getResults(column: string, value: string, page: number, pageSize: number): Observable<any> {
-    return this.http.get(`${environment.apiUrl}/search/${column}/${value}?page=${page}&pageSize=${pageSize}`);
+    return this.http.get(`${environment.apiUrl}/resultados/${column}/${value}?page=${page}&pageSize=${pageSize}`);
   }
   editLego(legoData: any): Observable<any> {
-    return this.http.put(`${environment.apiUrl}/edit/`, { legoData })
+    return this.http.put(`${environment.apiUrl}/editar/`, { legoData })
   }
 
   addLego(legoData: any): Observable<any> {
-    return this.http.post(`${environment.apiUrl}/add`, { legoData });
+    return this.http.post(`${environment.apiUrl}/agregar`, { legoData });
   }
 
   deleteLego(id: any): Observable<any> {
-    return this.http.delete(`${environment.apiUrl}/delete/${id}`)
+    return this.http.delete(`${environment.apiUrl}/eliminar/${id}`)
   }
 }
