@@ -44,12 +44,10 @@ app.get("/opciones/:columna/:valor", async (req, res) => {
         .send({ message: "No existen opciones para el valor", data: [] });
     }
 
-    res
-      .status(200)
-      .send({
-        message: "Opciones encontradas",
-        data: result.map((opcion) => opcion[columna]),
-      });
+    res.status(200).send({
+      message: "Opciones encontradas",
+      data: result.map((opcion) => opcion[columna]),
+    });
   } catch (error) {
     console.error("Error al obtener las opciones:", error);
     res.status(500).send({ message: "Internal Server Error" });
@@ -87,19 +85,17 @@ app.get("/resultados/:columna/:valor", async (req, res) => {
 
     const imgData = await scrapeLegoData(result);
 
-    res
-      .status(200)
-      .send({
-        message: "Legos encontrados",
-        data: result,
-        imgData,
-        pagination: {
-          page,
-          pageSize,
-          totalLegos: totalLegos,
-          totalPages: totalPages,
-        },
-      });
+    res.status(200).send({
+      message: "Legos encontrados",
+      data: result,
+      imgData,
+      pagination: {
+        page,
+        pageSize,
+        totalLegos: totalLegos,
+        totalPages: totalPages,
+      },
+    });
   } catch (error) {
     console.error("Error al buscar resultados:", error);
     res.status(500).send({ message: "Internal Server Error:", error });
@@ -110,22 +106,47 @@ app.put("/editar", async (req, res) => {
   try {
     const { legoData } = req.body;
 
-    if (!legoData)
-      return res.status(400).send({ message: "Flatn valores en la consulta" });
+    if (!legoData) {
+      return res.status(400).send({ message: "Faltan valores en la consulta" });
+    }
 
     const { id, ...fields } = legoData;
 
-    const columns = Object.keys(fields);
-    const values = Object.values(fields);
+    // Filtrar campos con valores válidos
+    const validEntries = Object.entries(fields).filter(
+      ([_, value]) => value !== undefined && value !== null && value !== ""
+    );
 
-    for (let i = 0; i < columns.length; i++) {
-      const query = `UPDATE lego SET ${columns[i]} = $1 WHERE id = $2`;
-      await pool.query(query, [values[i], id]);
+    if (validEntries.length === 0) {
+      return res
+        .status(400)
+        .send({ message: "No hay campos válidos para actualizar" });
     }
+
+    // Preparar la parte SET de la consulta
+    const setClause = validEntries
+      .map(([column], index) => `"${column}" = $${index + 1}`)
+      .join(", ");
+
+    // Obtener los valores en el orden correcto
+    const values = validEntries.map(([_, value]) => value);
+    values.push(id); // Añadir el ID al final para el WHERE
+
+    // Crear la consulta con un solo UPDATE
+    const query = `UPDATE lego SET ${setClause} WHERE id = $${values.length} RETURNING *`;
+
+    console.log(query); // Para depuración
+
+    // Ejecutar un solo UPDATE con todos los campos
+    const result = await pool.query(query, values);
 
     const imgData = await scrapeLegoData([legoData]);
 
-    res.status(201).send({ message: "Lego editado correctamente", imgData });
+    res.status(200).send({
+      message: "Lego editado correctamente",
+      data: result.rows[0],
+      imgData,
+    });
   } catch (error) {
     console.error("Error al editar lego:", error);
     res.status(500).send({ message: "Internal Server Error" });
