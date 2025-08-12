@@ -1,4 +1,4 @@
 export const environment = {
     production: true,
-    apiUrl: 'https://lego-np20.onrender.com'
+    apiUrl: 'https://lego-lq2w.onrender.com'
 }
